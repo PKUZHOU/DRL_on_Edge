@@ -24,7 +24,7 @@ import os.path
 import numpy as np
 import tensorflow as tf
 
-import deepmind_lab
+#import deepmind_lab
 
 
 nest = tf.contrib.framework.nest

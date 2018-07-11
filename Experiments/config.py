@@ -1,0 +1,9 @@
+cfg_Main_server_Max_flops     = 100000 #Gops
+cfg_Main_server_port_ratio    = 10000  #Mbps
+cfg_Middle_server_Max_flops   = 10000
+cfg_Middle_server_port_ratio  = 1000
+cfg_Middle_server_num         = 4
+cfg_IOTdeviceNums_per_Servier = 5
+cfg_IOT_Max_flops             = 20
+cfg_IOT_Port_ratio            = 100
+cfg_IOT_Barrery               = 3000  #Mah

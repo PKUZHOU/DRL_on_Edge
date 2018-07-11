@@ -1,0 +1,51 @@
+// Edge compution hierarchy
+digraph {
+	Middle_server_0 [label=Middle_server_0]
+	Main_server -> Middle_server_0
+	Iot_0 [label=Iot_0]
+	Middle_server_0 -> Iot_0
+	Iot_1 [label=Iot_1]
+	Middle_server_0 -> Iot_1
+	Iot_2 [label=Iot_2]
+	Middle_server_0 -> Iot_2
+	Iot_3 [label=Iot_3]
+	Middle_server_0 -> Iot_3
+	Iot_4 [label=Iot_4]
+	Middle_server_0 -> Iot_4
+	Middle_server_1 [label=Middle_server_1]
+	Main_server -> Middle_server_1
+	Iot_5 [label=Iot_5]
+	Middle_server_1 -> Iot_5
+	Iot_6 [label=Iot_6]
+	Middle_server_1 -> Iot_6
+	Iot_7 [label=Iot_7]
+	Middle_server_1 -> Iot_7
+	Iot_8 [label=Iot_8]
+	Middle_server_1 -> Iot_8
+	Iot_9 [label=Iot_9]
+	Middle_server_1 -> Iot_9
+	Middle_server_2 [label=Middle_server_2]
+	Main_server -> Middle_server_2
+	Iot_10 [label=Iot_10]
+	Middle_server_2 -> Iot_10
+	Iot_11 [label=Iot_11]
+	Middle_server_2 -> Iot_11
+	Iot_12 [label=Iot_12]
+	Middle_server_2 -> Iot_12
+	Iot_13 [label=Iot_13]
+	Middle_server_2 -> Iot_13
+	Iot_14 [label=Iot_14]
+	Middle_server_2 -> Iot_14
+	Middle_server_3 [label=Middle_server_3]
+	Main_server -> Middle_server_3
+	Iot_15 [label=Iot_15]
+	Middle_server_3 -> Iot_15
+	Iot_16 [label=Iot_16]
+	Middle_server_3 -> Iot_16
+	Iot_17 [label=Iot_17]
+	Middle_server_3 -> Iot_17
+	Iot_18 [label=Iot_18]
+	Middle_server_3 -> Iot_18
+	Iot_19 [label=Iot_19]
+	Middle_server_3 -> Iot_19
+}
