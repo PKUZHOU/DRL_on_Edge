@@ -25,7 +25,7 @@ class Profiler:
         self.dot = Digraph(comment=name)
     def Draw_hierarchy(self,current_device):
         '''
-        Draw the hierarchy of the system, at first call input the root server instance
+            Draw the hierarchy of the system, at first call input the root server instance
         '''
         for inferior_device in current_device.inferior_devices:
             self.dot.node(inferior_device.Name,inferior_device.Name)
@@ -40,37 +40,90 @@ class Server(object):
     def __init__(self,Name,Max_flops,Port_ratio,RAM):
         #the max computing ability
         self.Name = Name
-        '''
-        Server type:
-        0x0 : Main Server
-        0x1 : Middle Server
-        '''
+
+        # Server type:
+        # 0x0 : Main Server
+        # 0x1 : Middle Server
+
         self.Type = None
-        ''' 
-        0x0 : Await, ready for task
-        0x1 : 
-        '''
+        #
+        # 0x0 : Await, ready for task
+        # 0x1 :
+        #
         self.State = 0x0
-        self.Max_flops = Max_flops
-        #the max Port ratio, Mbps
+
+
+        # The Computation capacity is the max computation resource a device has
+        # *Gflops
+
+        self.Computation_capacity = Max_flops
+        self.idle_compution_resource = Max_flops
+
+
+        # The Network Port ratio,for server the default is 10Gbps.
+        # if several devices connected to the same server they share the bandwidth
+        # *Mbps
+
         self.Port_ratio = Port_ratio
+        self.idle_bandwidth = Port_ratio
+
+        # '''
+        # TODO: The effect of RAM parameter is waiting for explore
+        # '''
         self.RAM = RAM
+
+
+        # inferior devices are devices connected to the server and are inferior to this server
+        # in the topology
+
         self.inferior_devices = []
-        #in this system each device only has one superior device
+
+
+        # in this system each device only has one superior device
+
         self.superior_device  = None
-        self.num_jobs = 0  # the num of jobs wating to be done
-        self.job_queue = queue.Queue()
+
+
+        # The jobs queue only contains the jobs waiting to be computed
+        # The communication tasks are queued in trans_in queue and trans_out queue
+
+        self.jobs_queue      = queue.Queue()
+        self.trans_in_queue  = queue.Queue()
+        self.trans_out_queue = queue.Queue()
 
     def Connect(self,Device):
+        '''
+        Form the topology
+        '''
         Device.superior_device = self
         self.inferior_devices.append(Device)
-    def Querry(self):
+
+    def Query(self):
+        '''
+        pull a request to the superior device, the type is based on current sate
+
+        Type 0x0:
+            Middle server pushes gradients to Main server
+        Type 0x1:
+            Main server pushes new model to Middle server
+        Type 0x2:
+            Middle server pushes new model to Edge devices
+        Type 0x3:
+            Middle server pushes prediction to Edge devices
+        Type 0x4:
+
+        '''
         #job = Job(job_type,content_size)
         while(True):
             self.superior_device.Receive(job)
+            
     def Receive(self,job):
         self.job_queue.put(job)
     def Check_queue(self):
+        #check the job queue, if not empty, fech jobs to process
+        if(not self.job_queue.empty()):
+            if()
+
         
 
 
@@ -96,7 +149,7 @@ class IoT:
 
     def Querry(self):
         job = Job(0x0,cfg_Input_size,cfg_Model_flops)
-        self.superior_device
+        self.superior_device.Receive(job);
 class Manager:
     '''
     The Manager of this emulator, it controls all the behavior of emulated environment.
