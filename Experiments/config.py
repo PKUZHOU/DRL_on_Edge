@@ -7,3 +7,7 @@ cfg_IOTdeviceNums_per_Servier = 5
 cfg_IOT_Max_flops             = 20
 cfg_IOT_Port_ratio            = 100
 cfg_IOT_Barrery               = 3000  #Mah
+
+
+cfg_Input_size                = 640*360*3 #Bytes
+cfg_Model_flops               = 10000 #flops
