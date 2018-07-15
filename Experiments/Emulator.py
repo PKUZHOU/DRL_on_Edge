@@ -3,23 +3,6 @@ from config import *
 from graphviz import Digraph
 import queue
 
-
-class Job:
-    def __init__(self,job_type,content_size,computing_resources = 0):
-        '''
-        Job types:
-        0x0:    transfer images or some other medias collected by sensors
-        0x1:    Model parameters
-        0x2:    Gradents computed by back propgation
-        '''
-        self.job_type = job_type
-        self.content_size = content_size
-        '''
-        The computing resources needed to compute this job, *Gflops
-        '''
-        self.computing_resources = computing_resources
-        self.done = False
-
 class Profiler:
     def __init__(self,name):
         self.dot = Digraph(comment=name)
@@ -35,6 +18,73 @@ class Profiler:
     def view(self):
         #show the hierarchy by picture
         self.dot.render('./table.gv',view=True)
+
+class Manager:
+    '''
+    The Manager of this emulator, it controls all the behavior of emulated environment.
+    The devices' running are based a unified cycle signal
+    '''
+    def __init__(self,time_slot):
+        self.time = 0
+        self.time_slot = time_slot #ms
+        self.Main_server = None
+        self.global_jobs = {}
+
+    def tick(self):
+        '''
+        the global time steps a time slot
+        '''
+        self.time+=self.time_slot
+
+    def set_Main_server(self,Main_server):
+        '''
+        after building the hierarchy, pass the Main_server (the root of the graph) to the manager to run emulating
+        '''
+        self.Main_server = Main_server
+
+    def recursive_run(self,device):
+        '''
+        run every devices in one time step
+        '''
+
+        device.Query(self.time,self.global_jobs)
+        device.Receive(self.time,self.global_jobs)
+
+        while (len(device.inferior_devices)!=0):
+            for sub_device in device.inferior_devices:
+                self.recursive_run(sub_device)
+
+    def run(self,max_time):
+        while (self.time<max_time):
+            self.recursive_run(self.Main_server)
+            self.tick()
+
+
+class Job:
+    def __init__(self,job_type,content_size,created_time,computing_resources = 0):
+        '''
+        Job types:
+        0x0:    transfer images or some other medias collected by sensors
+        0x1:    Model parameters
+        0x2:    Gradents computed by back propgation
+        '''
+        self.job_type = job_type
+        self.content_size = content_size
+        '''
+        The computing resources needed to compute this job, *Gflops
+        '''
+        self.computing_resources = computing_resources
+        self.done = False
+
+        #the time stamp that this job is created
+        self.created_time = created_time
+        self.receive_time = 0
+
+        def set_receive_time(time):
+            self.receive_time = time
+
+
+
 
 class Server(object):
     def __init__(self,Name,Max_flops,Port_ratio,RAM):
@@ -98,7 +148,7 @@ class Server(object):
         Device.superior_device = self
         self.inferior_devices.append(Device)
 
-    def Query(self):
+    def Query(self,current_time,global_jobs):
         '''
         pull a request to the superior device, the type is based on current sate
 
@@ -113,19 +163,19 @@ class Server(object):
         Type 0x4:
 
         '''
-        #job = Job(job_type,content_size)
-        while(True):
-            self.superior_device.Receive(job)
-            
-    def Receive(self,job):
-        self.job_queue.put(job)
+        job = Job(job_type,content_size,current_time,)
+
+    def Receive(self,current_time,global_jobs):
+        for my_job in global_jobs[self.Name]:
+            if my_job.receive_time <= current_time:
+                self.jobs_queue.put(my_job)
+                global_jobs[self.Name].remove(my_job)
+
+
     def Check_queue(self):
         #check the job queue, if not empty, fech jobs to process
-        if(not self.job_queue.empty()):
+        if(not self.jobs_queue.empty()):
             if()
-
-        
-
 
 class Main_Server(Server):
     def __init__(self,Name,Max_flops,Port_ratio,RAM):
@@ -147,38 +197,14 @@ class IoT:
         self.superior_device = None
         self.inferior_devices = []
 
-    def Querry(self):
+    def Querry(self,current_time,global_jobs):
         job = Job(0x0,cfg_Input_size,cfg_Model_flops)
-        self.superior_device.Receive(job);
-class Manager:
-    '''
-    The Manager of this emulator, it controls all the behavior of emulated environment.
-    The devices' running are based a unified cycle signal
-    '''
-    def __init__(self):
-        self.time = 0
-        self.Main_server = None
+        self.superior_device.Receive(job)
 
-    def set_Main_server(self,Main_server):
-        '''
-        after building the hierarchy, pass the Main_server (the root of the graph) to the manager to run emulating
-        '''
-        self.Main_server = Main_server
+    def Receive(self,current_time,global_jobs):
+        pass
 
-    def recursive_run(self,device):
-        '''
-        run every devices in one time step
-        '''
-        device.Querry()
-        device.Receive()
 
-        while (len(device.inferior_devices)!=0):
-            for sub_device in device.inferior_devices:
-                self.recursive_run(sub_device)
-
-    def run(self):
-        self.recursive_run(self.Main_server)
-        self.time+=1
 
 
 
