@@ -116,7 +116,7 @@ class Server(object):
         #job = Job(job_type,content_size)
         while(True):
             self.superior_device.Receive(job)
-            
+
     def Receive(self,job):
         self.job_queue.put(job)
     def Check_queue(self):
