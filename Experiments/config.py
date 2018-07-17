@@ -10,4 +10,9 @@ cfg_IOT_Barrery               = 3000  #Mah
 
 
 cfg_Input_size                = 640*360*3 #Bytes
-cfg_Model_flops               = 10000 #flops
+cfg_Resource_Model_forward    = 10000 #flops
+cfg_Resource_Model_backward   = 20000 #flops
+
+cfg_IOT_SERVER_DELAY          = 100   #ms
+cfg_TimeSlot                  = 1 #ms
+cfg_MaxTime                   = 10000000
