@@ -16,3 +16,8 @@ cfg_Resource_Model_backward   = 20000 #flops
 cfg_IOT_SERVER_DELAY          = 100   #ms
 cfg_TimeSlot                  = 1 #ms
 cfg_MaxTime                   = 10000000
+
+cfg_Model_Parameter_size      = 10 #MB
+cfg_Model_Gradients_size      = 10 #MB
+
+cfg_SyncModel_flops           = 100000

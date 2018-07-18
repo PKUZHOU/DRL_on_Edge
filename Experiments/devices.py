@@ -11,7 +11,6 @@ class Server(object):
         # 0x0 : Main Server
         # 0x1 : Middle Server
         self.Type = None
-
         # The Computation capacity is the max computation resource a device has
         # *Gflops
         self.Computation_capacity = Max_flops
@@ -44,71 +43,76 @@ class Server(object):
 
     def Process(self,current_time,global_jobs):
         self.Receive(current_time, global_jobs)
-        self.Query(current_time, global_jobs)
         self.ProcLocalJobs(current_time)
+        self.Query(current_time, global_jobs)
 
     def Query(self, current_time, global_jobs):
-        '''
-        pull a request to the superior device, the type is based on current sate
-
-        Type 0x0:
-            Middle server pushes gradients to Main server
-        Type 0x1:
-            Main server pushes new model to Middle server
-        Type 0x2:
-            Middle server pushes new model to Edge devices
-        Type 0x3:
-            Middle server pushes prediction to Edge devices
-        Type 0x4:
-        '''
-        pass
-
+        for job in self.jobs_pool:
+            if job.done:
+                if job.job_type == TYPE_JOB_SERVER_INFERENCE:
+                    new_job = Job(TYPE_COM_SERVER2IOT_ACTIONS,current_time,0)
+                    new_job.set_receive_time(current_time+cfg_IOT_SERVER_DELAY)
+                    if(not job.creater in global_jobs.keys()):
+                        global_jobs[job.creater] = []
+                    global_jobs[job.creater].append(new_job)
+                    self.jobs_pool.remove(job)
+                elif job.job_type == TYPE_JOB_SERVER_BACKWARD:
+                    pass
+                elif job.job_type == TYPE_JOB_SERVER_SYNC_GRADIENTS:
+                    pass
     def Receive(self, current_time, global_jobs):
-        pass
+        if(self.Name in global_jobs.keys()):
+            for my_job in global_jobs[self.Name]:
+                if my_job.receive_time <= current_time:
+                    if(my_job.job_type==TYPE_COM_IOT2SERVER_MEDIAS):
+                        # receive the environments sent by IOT
+                        self.experiance_pool_size+=1
+                        # creat a inference job to get the action
+                        new_job = Job(TYPE_JOB_SERVER_INFERENCE,cfg_Input_size,current_time,cfg_Resource_Model_forward)
+                        new_job.set_creater(my_job.creater)
+                        self.jobs_pool.append(new_job)
 
-    def Check_queue(self):
-        # check the job queue, if not empty, fech jobs to process
-        pass
+                    elif(my_job.job_type==TYPE_COM_IOT2SERVER_MODEL_GRADIENTS):
+                        # receive Model gradients from IOT, sync it
+                        new_job = Job(TYPE_JOB_SERVER_SYNC_GRADIENTS,cfg_Model_Gradients_size,current_time,cfg_SyncModel_flops)
+                        new_job.set_creater(my_job.creator)
+                        self.jobs_pool.append(new_job)
+
+                    elif(my_job.job_type==TYPE_COM_SERVER2SERVER_MODEL_GRADIENTS):
+                        # receive Model gradients from server, sync it
+                        new_job = Job(TYPE_JOB_SERVER_SYNC_GRADIENTS, cfg_Model_Gradients_size, current_time,
+                                      cfg_SyncModel_flops)
+                        new_job.set_creater(my_job.creator)
+                        self.jobs_pool.append(new_job)
+
+                    elif(my_job.job_type==TYPE_COM_SERVER2SERVER_MODEL_PARAMETER):
+                        # receive updated Model Parameters from server, and update the local model
+                        pass
+
+                    global_jobs[self.Name].remove(my_job)
 
     def ProcLocalJobs(self,current_time):
-        pass
+        for job in self.jobs_pool:
+            if(job.job_type == TYPE_JOB_SERVER_INFERENCE):
+                if job.computing_resources>0:
+                    job.computing_resources -= self.idle_compution_resource*cfg_TimeSlot
+                else:
+                    job.done = True
 
-
+            elif(job.job_type == TYPE_JOB_SERVER_BACKWARD):
+                job.done = True
+            elif(job.job_type == TYPE_JOB_SERVER_SYNC_GRADIENTS):
+                job.done = True
 
 class Main_Server(Server):
     def __init__(self, Name, Max_flops, Port_ratio, RAM):
         super(Main_Server, self).__init__(Name, Max_flops, Port_ratio,RAM)
         self.Type = 0x0
-    def Query(self, current_time, global_jobs):
-        pass
-    def Receive(self, current_time, global_jobs):
-        pass
-    def ProcLocalJobs(self,current_time):
-        pass
 
 class Middle_Server(Server):
     def __init__(self, Name, Max_flops, Port_ratio, RAM):
         super(Middle_Server, self).__init__(Name, Max_flops, Port_ratio,RAM)
         self.Type = 0x1
-    def Query(self, current_time, global_jobs):
-        pass
-    def Receive(self, current_time, global_jobs):
-        if(self.Name in global_jobs.keys()):
-            for my_job in global_jobs[self.Name]:
-                if my_job.receive_time <= current_time:
-                    #print(self.Name," ",self.experiance_pool_size)
-                    if(my_job.job_type==TYPE_JOB_SEND_MEDIAS):
-                        self.experiance_pool_size+=1
-                        self.jobs_pool.append(my_job)
-                    elif(my_job.job_type==TYPE_JOB_SEND_MODEL_GRADIENTS):
-                        pass
-                        #global_jobs[self.Name].remove(my_job)
-                    global_jobs[self.Name].remove(my_job)
-    def ProcLocalJobs(self,current_time):
-        if(not len(self.jobs_pool) == 0):
-            for job in self.jobs_pool:
-                
-
 
 class IoT:
     def __init__(self, Name, Max_flops, Port_ratio, Battery, RAM):
@@ -124,8 +128,8 @@ class IoT:
     def Process(self, current_time, global_jobs):
         # watch the global jobs pool, put the received jobs into local jobs pool
         self.Receive(current_time, global_jobs)
-        self.Query(current_time, global_jobs)
         self.ProcLocalJobs(current_time)
+        self.Query(current_time, global_jobs)
 
     def Query(self, current_time, global_jobs):
         jobs = self.Decide_jobs(current_time)
@@ -134,8 +138,10 @@ class IoT:
                 global_jobs[self.superior_device.Name].append(job)
             else:
                 global_jobs[self.superior_device.Name] = [job]
+            jobs.remove(job)
 
     def Receive(self, current_time, global_jobs):
+        #receive the (a) or updated model parameters from server
         if(self.Name in global_jobs.keys()):
             for job_to_receive in global_jobs[self.Name]:
                 if job_to_receive.receive_time <= current_time:
@@ -145,25 +151,41 @@ class IoT:
     def ProcLocalJobs(self, current_time):
         for local_job in self.local_jobs:
             if local_job.job_type == TYPE_JOB_IOT_ACT:
-                pass
+                #the iot device acts and return the rewards
+                print(self.Name, " act ")
+                new_job = Job(TYPE_COM_IOT2SERVER_REWARDS,0,current_time)
+                new_job.set_receive_time(current_time+cfg_IOT_SERVER_DELAY)
+                self.local_jobs.append(new_job)
+                self.local_jobs.remove(local_job)
+
             elif local_job.job_type == TYPE_JOB_IOT_BACKWARD:
+                #back ward locally
                 #TODO decide BACKWARD logic
                 pass
             elif local_job.job_type == TYPE_JOB_IOT_INFERENCE:
+                #inference locally
                 #TODO decide INFERENCE logic
                 pass
-
+            # elif local_job.job_type == TYPE_JOB_:
+            #     pass
     def get_cpu_processing_time(self, job):
         return job.computing_resources / self.Max_flops
 
     def Decide_jobs(self, current_time):
         jobs = []
-
         random.seed(current_time)
         if(random.random()<0.01):
-            job = Job(TYPE_JOB_SEND_MEDIAS, cfg_Input_size, current_time, cfg_Resource_Model_forward)
+            #send (s) to uper_server
+            job = Job(TYPE_COM_IOT2SERVER_MEDIAS, cfg_Input_size, current_time, cfg_Resource_Model_forward)
             job.set_receive_time(current_time+cfg_IOT_SERVER_DELAY)
             job.creater = self.Name
             jobs.append(job)
 
+        for job in self.local_jobs:
+            if job.job_type == TYPE_COM_IOT2SERVER_REWARDS:
+                new_job = Job(TYPE_COM_IOT2SERVER_REWARDS,0,current_time)
+                new_job.set_receive_time(current_time+cfg_IOT_SERVER_DELAY)
+                new_job.set_creater(self.Name)
+                jobs.append(new_job)
+                self.local_jobs.remove(job)
         return jobs

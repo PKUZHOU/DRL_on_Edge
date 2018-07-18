@@ -21,3 +21,5 @@ class Job:
 
     def set_receive_time(self,time):
         self.receive_time = time
+    def set_creater(self,Name):
+        self.creater = Name
