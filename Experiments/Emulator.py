@@ -57,7 +57,7 @@ class Manager:
         #run the whole system until reaching the max time
         while (self.time<max_time):
             self.recursive_run(self.Main_server)
-            # print (self.time)
+            #print (self.time)
             self.tick()
 
 def create_edge_hierarchy():
