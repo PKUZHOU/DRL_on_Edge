@@ -2,10 +2,13 @@ import graphviz
 from config import *
 from devices import *
 from graphviz import Digraph
+#from GUI import *
 
 class Profiler:
     def __init__(self,name):
         self.dot = Digraph(comment=name)
+        self.graph = []
+
     def Draw_hierarchy(self,current_device):
         '''
             Draw the hierarchy of the system, at first call input the root server instance
@@ -14,6 +17,11 @@ class Profiler:
             self.dot.node(inferior_device.Name,inferior_device.Name)
             self.dot.edge(current_device.Name,inferior_device.Name)
             self.Draw_hierarchy(inferior_device)
+    # def Get_graph(self,current_device):
+    #     for inferior_device in current_device.inferior_devices:
+    #         self.dot.node(inferior_device.Name, inferior_device.Name)
+    #         self.dot.edge(current_device.Name, inferior_device.Name)
+    #         self.Draw_hierarchy(inferior_device)
 
     def view(self):
         #show the hierarchy by picture
@@ -29,6 +37,7 @@ class Manager:
         self.time_slot   = time_slot #ms
         self.Main_server = None
         self.global_jobs = {}
+        self.old_global_jobs = {}
 
     def tick(self):
         '''
@@ -59,16 +68,18 @@ class Manager:
             self.recursive_run(self.Main_server)
             #print (self.time)
             self.tick()
-            self.LOG()
-
-
+            #self.LOG()
     def LOG(self):
         for device in self.global_jobs.keys():
+            if device not in self.old_global_jobs.keys():
+                self.old_global_jobs[device] = []
             #print('time :',self.time)
+
             for job in self.global_jobs[device]:
-                print 'Type :',job.job_type,str(job.creater)+'---->'+device
+                if job not in self.old_global_jobs[device]:
+                    print 'Type :',job.job_type,str(job.creater)+'---->'+device, "creat time:" ,job.created_time
 
-
+        #self.old_global_jobs = self.global_jobs
 
 def create_edge_hierarchy():
     Main_server = Main_Server('Main_server',cfg_Main_server_Max_flops,cfg_Main_server_port_ratio)
