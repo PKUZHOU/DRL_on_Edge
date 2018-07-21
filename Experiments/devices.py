@@ -36,6 +36,7 @@ class Server(object):
         self.superior_device = None
         # The jobs queue only contains the jobs waiting to be computed
         self.jobs_pool = []
+        
         # The experiance pool size represents the total data pairs received
         self.experiance_pool_size = 0
 
@@ -69,10 +70,19 @@ class Server(object):
                     self.jobs_pool.remove(job)
                 elif job.job_type == TYPE_JOB_SERVER_BACKWARD:
                     #update the local parameters
-                    pass
+                    self.jobs_pool.remove(job)
+                    print "SERVER_BACKWARD "+self.Name
+                    
                 elif job.job_type == TYPE_JOB_SERVER_SYNC_GRADIENTS:
                     #sync the
-                    pass
+                    print "SERVER_SYNC_GRADIENTS "+self.Name
+                    self.jobs_pool.remove(job)
+                
+                elif job.job_type == TYPE_JOB_SERVER_UPDATE_MODEL:
+                    print "SERVER_UPDATE_MODEL "+self.Name
+                    self.jobs_pool.remove(job)
+
+
     def Receive(self, current_time, global_jobs):
         if(self.Name in global_jobs.keys()):
             for my_job in global_jobs[self.Name]:
@@ -87,12 +97,16 @@ class Server(object):
 
                     elif(my_job.job_type==TYPE_COM_IOT2SERVER_MODEL_GRADIENTS):
                         # receive Model gradients from IOT, sync it
+                        #TODO
                         new_job = Job(TYPE_JOB_SERVER_SYNC_GRADIENTS,cfg_Model_Gradients_size,current_time,cfg_SyncModel_flops)
                         new_job.set_creater(my_job.creator)
                         self.jobs_pool.append(new_job)
 
                     elif(my_job.job_type==TYPE_COM_SERVER2SERVER_MODEL_GRADIENTS):
                         # receive Model gradients from server, sync it
+                        '''
+                        Current poliy:
+                        '''
                         new_job = Job(TYPE_JOB_SERVER_SYNC_GRADIENTS, cfg_Model_Gradients_size, current_time,
                                       cfg_SyncModel_flops)
                         new_job.set_creater(my_job.creator)
@@ -100,7 +114,12 @@ class Server(object):
 
                     elif(my_job.job_type==TYPE_COM_SERVER2SERVER_MODEL_PARAMETER):
                         # receive updated Model Parameters from server, and update the local model
-                        pass
+                        
+                        new_job = Job(TYPE_JOB_SERVER_UPDATE_MODEL)
+                        new_job.set_creater(my_job.creator)
+                        self.jobs_pool.append(new_job)
+
+
 
                     global_jobs[self.Name].remove(my_job)
 
@@ -113,10 +132,14 @@ class Server(object):
                     job.done = True
 
             elif(job.job_type == TYPE_JOB_SERVER_BACKWARD):
-                job.done = True
+                if job.computing_resources>0:
+                    job.computing_resources -= self.idle_compution_resource*cfg_TimeSlot
+                else:
+                    job.done = True
             elif(job.job_type == TYPE_JOB_SERVER_SYNC_GRADIENTS):
                 job.done = True
-
+            elif(job.job_type == TYPE_JOB_SERVER_UPDATE_MODEL):
+                job.done = True
 class Main_Server(Server):
     def __init__(self, Name, Max_flops, Port_ratio):
         super(Main_Server, self).__init__(Name, Max_flops, Port_ratio)
@@ -180,6 +203,8 @@ class IoT:
             elif local_job.job_type == TYPE_JOB_IOT_BACKWARD:
                 #back ward locally
                 #TODO decide BACKWARD logic
+
+
                 pass
             elif local_job.job_type == TYPE_JOB_IOT_INFERENCE:
                 #inference locally

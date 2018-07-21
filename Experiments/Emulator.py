@@ -26,7 +26,7 @@ class Manager:
     '''
     def __init__(self,time_slot):
         self.time = 0
-        self.time_slot = time_slot #ms
+        self.time_slot   = time_slot #ms
         self.Main_server = None
         self.global_jobs = {}
 
@@ -64,7 +64,7 @@ class Manager:
 
     def LOG(self):
         for device in self.global_jobs.keys():
-            print('time :',self.time)
+            #print('time :',self.time)
             for job in self.global_jobs[device]:
                 print 'Type :',job.job_type,str(job.creater)+'---->'+device
 

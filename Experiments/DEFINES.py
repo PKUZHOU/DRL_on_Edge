@@ -22,4 +22,4 @@ TYPE_JOB_IOT_ACT                        = ID()
 TYPE_JOB_SERVER_INFERENCE               = ID()
 TYPE_JOB_SERVER_BACKWARD                = ID()
 TYPE_JOB_SERVER_SYNC_GRADIENTS          = ID()
-
+TYPE_JOB_SERVER_UPDATE_MODEL            = ID()
