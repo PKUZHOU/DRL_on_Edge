@@ -59,18 +59,28 @@ class Manager:
             self.recursive_run(self.Main_server)
             #print (self.time)
             self.tick()
+            self.LOG()
+
+
+    def LOG(self):
+        for device in self.global_jobs.keys():
+            print('time :',self.time)
+            for job in self.global_jobs[device]:
+                print 'Type :',job.job_type,str(job.creater)+'---->'+device
+
+
 
 def create_edge_hierarchy():
-    Main_server = Main_Server('Main_server',cfg_Main_server_Max_flops,cfg_Main_server_port_ratio,0)
+    Main_server = Main_Server('Main_server',cfg_Main_server_Max_flops,cfg_Main_server_port_ratio)
     for i in range(cfg_Middle_server_num):
-        middle_server = Middle_Server('Middle_server_'+str(i),cfg_Middle_server_Max_flops,cfg_Middle_server_port_ratio,0)
+        middle_server = Middle_Server('Middle_server_'+str(i),cfg_Middle_server_Max_flops,cfg_Middle_server_port_ratio)
         for j in range(cfg_IOTdeviceNums_per_Servier):
-            middle_server.Connect(IoT("Iot_"+str(i*cfg_IOTdeviceNums_per_Servier+j),cfg_IOT_Max_flops,cfg_IOT_Port_ratio,cfg_IOT_Barrery,0))
+            middle_server.Connect(IoT("Iot_"+str(i*cfg_IOTdeviceNums_per_Servier+j),cfg_IOT_Max_flops,cfg_IOT_Port_ratio,cfg_IOT_Barrery))
         Main_server.Connect(middle_server)
     return Main_server
 
 def creat_normal_hierarchy():
-    Main_server = Main_Server('Main_server', cfg_Main_server_Max_flops, cfg_Main_server_port_ratio,0)
+    Main_server = Main_Server('Main_server', cfg_Main_server_Max_flops, cfg_Main_server_port_ratio)
     for i in range(cfg_IOTdeviceNums_per_Servier):
         Main_server.Connect(
             IoT("Iot_" + str(i), cfg_IOT_Max_flops, cfg_IOT_Port_ratio,

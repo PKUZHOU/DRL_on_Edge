@@ -3,8 +3,17 @@ import random
 from job import *
 from DEFINES import *
 from config import *
+
+"""
+All the devices are running under the similar mode:
+when every time slot steps, it first observes the global jobs pool to check 
+if any jobs can be received at that time, then it creates the local jobs based 
+on the states. After that it checks the local jobs pool to process jobs, 
+Finally it decides what message can be sent to other devices and put it to the
+global jobs pool
+"""
 class Server(object):
-    def __init__(self, Name, Max_flops, Port_ratio, RAM):
+    def __init__(self, Name, Max_flops, Port_ratio):
         # the max computing ability
         self.Name = Name
         # Server type:
@@ -20,10 +29,6 @@ class Server(object):
         # *Mbps
         self.Port_ratio = Port_ratio
         self.idle_bandwidth = Port_ratio
-        # '''
-        # TODO: The effect of RAM parameter is waiting to explore
-        # '''
-        self.RAM = RAM
         # inferior devices are devices connected to the server and are inferior to this server
         # in the topology
         self.inferior_devices = []
@@ -49,23 +54,31 @@ class Server(object):
     def Query(self, current_time, global_jobs):
         for job in self.jobs_pool:
             if job.done:
+                #if the jobs are done, decide where to send out the results
                 if job.job_type == TYPE_JOB_SERVER_INFERENCE:
+                    #send the output of inference (action) to inferer devices
                     new_job = Job(TYPE_COM_SERVER2IOT_ACTIONS,current_time,0)
                     new_job.set_receive_time(current_time+cfg_IOT_SERVER_DELAY)
+                    new_job.set_creater(self.Name)
+
+                    #send the action to the creator of inference querying job
                     if(not job.creater in global_jobs.keys()):
                         global_jobs[job.creater] = []
                     global_jobs[job.creater].append(new_job)
+
                     self.jobs_pool.remove(job)
                 elif job.job_type == TYPE_JOB_SERVER_BACKWARD:
+                    #update the local parameters
                     pass
                 elif job.job_type == TYPE_JOB_SERVER_SYNC_GRADIENTS:
+                    #sync the
                     pass
     def Receive(self, current_time, global_jobs):
         if(self.Name in global_jobs.keys()):
             for my_job in global_jobs[self.Name]:
                 if my_job.receive_time <= current_time:
                     if(my_job.job_type==TYPE_COM_IOT2SERVER_MEDIAS):
-                        # receive the environments sent by IOT
+                        # receive the oberved environments data sent by IOT
                         self.experiance_pool_size+=1
                         # creat a inference job to get the action
                         new_job = Job(TYPE_JOB_SERVER_INFERENCE,cfg_Input_size,current_time,cfg_Resource_Model_forward)
@@ -105,22 +118,21 @@ class Server(object):
                 job.done = True
 
 class Main_Server(Server):
-    def __init__(self, Name, Max_flops, Port_ratio, RAM):
-        super(Main_Server, self).__init__(Name, Max_flops, Port_ratio,RAM)
+    def __init__(self, Name, Max_flops, Port_ratio):
+        super(Main_Server, self).__init__(Name, Max_flops, Port_ratio)
         self.Type = 0x0
 
 class Middle_Server(Server):
-    def __init__(self, Name, Max_flops, Port_ratio, RAM):
-        super(Middle_Server, self).__init__(Name, Max_flops, Port_ratio,RAM)
+    def __init__(self, Name, Max_flops, Port_ratio):
+        super(Middle_Server, self).__init__(Name, Max_flops, Port_ratio)
         self.Type = 0x1
 
 class IoT:
-    def __init__(self, Name, Max_flops, Port_ratio, Battery, RAM):
+    def __init__(self, Name, Max_flops, Port_ratio, Battery):
         self.Name = Name
         self.Max_flops = Max_flops
         self.Port_ratio = Port_ratio
         self.Battery = Battery
-        self.RAM = RAM
         self.superior_device = None
         self.inferior_devices = []
         self.local_jobs = []
@@ -145,7 +157,14 @@ class IoT:
         if(self.Name in global_jobs.keys()):
             for job_to_receive in global_jobs[self.Name]:
                 if job_to_receive.receive_time <= current_time:
-                    self.local_jobs.append(job_to_receive)
+                    if job_to_receive.job_type == TYPE_COM_SERVER2IOT_ACTIONS:
+                        #creat an action job
+                        new_job = Job(TYPE_JOB_IOT_ACT,0,current_time,0)
+                        self.local_jobs.append(new_job)
+                    elif job_to_receive.job_type == TYPE_COM_SERVER2IOT_MODEL_GRADIENTS:
+                        pass
+                    elif job_to_receive.job_type == TYPE_COM_SERVER2IOT_MODEL_PARAMETERS:
+                        pass
                     global_jobs[self.Name].remove(job_to_receive)
 
     def ProcLocalJobs(self, current_time):
@@ -168,8 +187,6 @@ class IoT:
                 pass
             # elif local_job.job_type == TYPE_JOB_:
             #     pass
-    def get_cpu_processing_time(self, job):
-        return job.computing_resources / self.Max_flops
 
     def Decide_jobs(self, current_time):
         jobs = []
