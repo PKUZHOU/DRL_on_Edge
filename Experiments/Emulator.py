@@ -77,7 +77,7 @@ class Manager:
 
             for job in self.global_jobs[device]:
                 if job not in self.old_global_jobs[device]:
-                    print 'Type :',job.job_type,str(job.creater)+'---->'+device, "creat time:" ,job.created_time
+                    print( 'Type :',job.job_type,str(job.creater)+'---->'+device, "creat time:" ,job.created_time)
 
         #self.old_global_jobs = self.global_jobs
 

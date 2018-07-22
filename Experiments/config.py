@@ -21,6 +21,6 @@ cfg_Model_Parameter_size      = 10 #MB
 cfg_Model_Gradients_size      = 10 #MB
 
 cfg_SyncModel_flops           = 100000
-
+cfg_Main_server_update_interval = 10000*cfg_TimeSlot
 
 DEBUG = 1
