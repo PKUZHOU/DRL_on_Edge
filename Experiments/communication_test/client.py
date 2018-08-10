@@ -6,55 +6,47 @@ import struct
 import cv2
 import numpy as np
 import os
-env = gym.make('Breakout-v0')
+
+Game = "Breakout-v0"
+Server_ip = '192.168.1.18'
+Server_port = 8888
+window_size = 84
+fps_time = 1./24
+Total_frames = 100000
+Len_data = 1024
+env = gym.make(Game)
 observation = env.reset()
 
-
-
 s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-s.connect(('192.168.1.18',8888))
-
-# print(s.recv(1024))
-# for data in ['a','b','c']:
-#     s.send(data)
-#     print(s.recv(1024))
+s.connect((Server_ip,Server_port))
 
 def send_mat(s,mat):
-    fileinfo_size = struct.calcsize('128s1')
     matlen = len(mat)
     testmat = ""
     sentlen = 0
     fhead = struct.pack('128s1',str(len(mat)))
     s.send(fhead)
-    while matlen-sentlen >1024:
-        s.send(mat[sentlen:sentlen+1024])
-        testmat+=mat[sentlen:sentlen+1024]
-        sentlen+=1024
+    while matlen-sentlen >Len_data:
+        s.send(mat[sentlen:sentlen+Len_data])
+        testmat+=mat[sentlen:sentlen+Len_data]
+        sentlen+=Len_data
     s.send(mat[sentlen:matlen])
-    testmat+=mat[sentlen:matlen]
-    testmat = json.loads(testmat)
-    testmat = np.asarray(testmat,dtype=np.int8)
-    cv2.imshow('test',testmat)
-    cv2.waitKey(1)
-    #print('send over...')
+#    testmat+=mat[sentlen:matlen]
+#    testmat = json.loads(testmat)
+#    testmat = np.asarray(testmat,dtype=np.int8)
+#    cv2.imshow('test',testmat)
+#    cv2.waitKey(1)
 
-for _ in range(10000):
-    #env.render()
-    # print(env.action_space.sample())
+for _ in range(Total_frames):
     observation, reward, done, info = env.step(env.action_space.sample())
-    time.sleep(0.033)
+    time.sleep(fps_time)
     if (done):
         observation = env.reset()
         observation, reward, done, info = env.step(env.action_space.sample())
-    observation = cv2.resize(observation, (84, 84))
-    # observation = cv2.resize(observation, (42, 42))
+    observation = cv2.resize(observation, (window_size, window_size))
     observation = json.dumps(observation.tolist())
-    #
-
     send_mat(s,observation)
     print("sent "+str(_))
-    #print(env.action_space.sample())
-
 
 s.send('exit')
 s.close()
