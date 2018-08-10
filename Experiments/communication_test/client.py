@@ -4,6 +4,7 @@ import time
 import json
 import struct
 import cv2
+import numpy as np
 import os
 env = gym.make('Breakout-v0')
 observation = env.reset()
@@ -21,14 +22,21 @@ s.connect(('192.168.1.18',8888))
 def send_mat(s,mat):
     fileinfo_size = struct.calcsize('128s1')
     matlen = len(mat)
+    testmat = ""
     sentlen = 0
     fhead = struct.pack('128s1',str(len(mat)))
     s.send(fhead)
     while matlen-sentlen >1024:
         s.send(mat[sentlen:sentlen+1024])
+        testmat+=mat[sentlen:sentlen+1024]
         sentlen+=1024
     s.send(mat[sentlen:matlen])
-    print('send over...')
+    testmat+=mat[sentlen:matlen]
+    testmat = json.loads(testmat)
+    testmat = np.asarray(testmat,dtype=np.int8)
+    cv2.imshow('test',testmat)
+    cv2.waitKey(1)
+    #print('send over...')
 
 for _ in range(10000):
     #env.render()
@@ -44,6 +52,7 @@ for _ in range(10000):
     #
 
     send_mat(s,observation)
+    print("sent "+str(_))
     #print(env.action_space.sample())
 
 

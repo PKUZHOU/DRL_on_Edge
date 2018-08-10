@@ -25,12 +25,14 @@ def tcplink(sock, addr):
         if buf:
             total_len = struct.unpack('128s1',buf)
         receive_len = 0
-        while receive_len<int(total_len[0][:5])-1024:
+        total_len = int(total_len[0][:5])
+        while receive_len<=total_len-1024:
             #print(receive_len)
             rdata = sock.recv(1024)
             receive_len+=1024
             full_file+=rdata
-        rdata = sock.recv(int(total_len[0][:5]) - receive_len)
+        if 0<total_len-receive_len<1024:
+            rdata = sock.recv(total_len - receive_len)
         full_file+=rdata
         mat = json.loads(full_file)
         mat = np.asarray(mat,dtype=np.int8)
