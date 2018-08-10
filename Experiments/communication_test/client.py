@@ -8,10 +8,10 @@ import numpy as np
 import os
 
 Game = "Breakout-v0"
-Server_ip = '192.168.1.18'
+Server_ip = '222.29.97.61'
 Server_port = 8888
 window_size = 84
-fps_time = 1./24
+fps_time = 1./30
 Total_frames = 100000
 Len_data = 1024
 env = gym.make(Game)
@@ -31,6 +31,11 @@ def send_mat(s,mat):
         testmat+=mat[sentlen:sentlen+Len_data]
         sentlen+=Len_data
     s.send(mat[sentlen:matlen])
+
+def get_action(s):
+    action = int(s.recv(1))
+    # print('action : ', action)
+    return action
 #    testmat+=mat[sentlen:matlen]
 #    testmat = json.loads(testmat)
 #    testmat = np.asarray(testmat,dtype=np.int8)
@@ -38,15 +43,26 @@ def send_mat(s,mat):
 #    cv2.waitKey(1)
 
 for _ in range(Total_frames):
-    observation, reward, done, info = env.step(env.action_space.sample())
-    time.sleep(fps_time)
+
+    # observation, reward, done, info = env.step(2)
+    start = time.time()
+    action = get_action(s)
+    print "latency_get_action\t "+str(time.time() - start)
+
+    start = time.time()
+    observation, reward, done, info = env.step(action)
+    #time.sleep(fps_time)
     if (done):
         observation = env.reset()
         observation, reward, done, info = env.step(env.action_space.sample())
     observation = cv2.resize(observation, (window_size, window_size))
+    print "time render\t"+str(time.time()-start)
+
+    start = time.time()
     observation = json.dumps(observation.tolist())
     send_mat(s,observation)
-    print("sent "+str(_))
+    print "send \t"+str(time.time()-start)
+
 
 s.send('exit')
 s.close()
