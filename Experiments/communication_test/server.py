@@ -10,6 +10,7 @@ Game = "Breakout-v0"
 Server_ip = '222.29.97.61'
 Server_port = 8888
 
+
 s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 s.bind((Server_ip,Server_port))
 s.listen(5)
@@ -63,16 +64,16 @@ def tcplink(sock, addr):
             total_len-=len(rdata)
         mat = json.loads(full_file)
         mat = np.asarray(mat,dtype=np.int8)
-        # global Mats
-        # Mats[str(my_id)] = mat
+        global Mats
+        Mats[str(my_id)] = mat
         action = get_action(mat)
         sock.send(action[0])
 
         # cv2.imshow(window,mat)
         # cv2.waitKey(1)
 
-# t1 = threading.Thread(target=show_window,args=[])
-# t1.start()
+t1 = threading.Thread(target=show_window,args=[])
+t1.start()
 while True:
     sock,addr = s.accept()
     t = threading.Thread(target=tcplink,args=(sock,addr))
